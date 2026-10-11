@@ -11,13 +11,30 @@ import java.math.BigDecimal;
  * роли цены — дивидендная доходность ({@link Stock#getDividendYield()}), единственный числовой
  * атрибут акции на этом этапе проекта.
  */
-@Deprecated
+
 public class PriceFilter implements InstrumentFilter {
-
     public enum Operator {
-        GE, LE, EQ
-    }
+        GE {
+            @Override
+            public boolean apply(BigDecimal DividendYield, BigDecimal threshold) {
+                return DividendYield.compareTo(threshold) >= 0;
+            }
+        },
+        LE {
+            @Override
+            public boolean apply(BigDecimal DividendYield, BigDecimal threshold) {
+                return DividendYield.compareTo(threshold) <= 0;
+            }
+        },
+        EQ {
+            @Override
+            public boolean apply(BigDecimal DividendYield, BigDecimal threshold) {
+                return DividendYield.compareTo(threshold) == 0;
+            }
+        };
 
+        public abstract boolean apply(BigDecimal DividendYield, BigDecimal threshold);
+    }
     private final Operator operator;
     private final BigDecimal threshold;
 
@@ -28,14 +45,9 @@ public class PriceFilter implements InstrumentFilter {
 
     @Override
     public boolean matches(Instrument instrument) {
-        if (!(instrument instanceof Stock stock)) {
-            return false;
+        if (instrument instanceof Stock stock) {
+            return operator.apply(stock.getDividendYield(), threshold);
         }
-        int comparison = stock.getDividendYield().compareTo(threshold);
-        return switch (operator) {
-            case GE -> comparison >= 0;
-            case LE -> comparison <= 0;
-            case EQ -> comparison == 0;
-        };
+        return false;
     }
 }
